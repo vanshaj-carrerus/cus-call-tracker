@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "cus-call-tracker",
+    "name": "Call Tracker",
     "slug": "cus-call-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,6 +17,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
+      "permissions": [
+        "android.permission.READ_CALL_LOG",
+        "android.permission.READ_PHONE_STATE",
+        "android.permission.READ_PHONE_NUMBERS"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
