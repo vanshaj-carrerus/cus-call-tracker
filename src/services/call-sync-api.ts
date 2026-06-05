@@ -1,35 +1,35 @@
-import type { CallRecord } from '@/types/call';
+import { ADMIN_CALLS_SYNC_URL, assertApiConfigured } from '@/constants/api';
+import type { SyncCallLogEntry, SyncCallsResponse } from '@/types/call-sync';
 
-const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'https://your-custech-api.com';
+/**
+ * Upload device call logs to CUS Tech admin sync endpoint.
+ * Backend dedupes via callId = userId_number_date.
+ */
+export async function syncCallLogsToServer(
+  userId: string,
+  logs: SyncCallLogEntry[],
+): Promise<SyncCallsResponse> {
+  assertApiConfigured();
 
-type SyncResult = {
-  inserted: number;
-  updated: number;
-  total: number;
-};
-
-export async function syncCallsToServer(
-  token: string,
-  calls: CallRecord[],
-  deviceId?: string,
-): Promise<SyncResult> {
-  const response = await fetch(`${API_BASE}/api/call-tracker/sync`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      deviceId,
-      calls,
-    }),
-  });
-
-  const json = await response.json();
-
-  if (!response.ok) {
-    throw new Error(json.message ?? 'Sync failed');
+  if (!ADMIN_CALLS_SYNC_URL) {
+    throw new Error('Sync URL is not configured.');
   }
 
-  return json.data;
+  if (logs.length === 0) {
+    return { success: true, count: 0 };
+  }
+
+  const response = await fetch(ADMIN_CALLS_SYNC_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, logs }),
+  });
+
+  const result = (await response.json().catch(() => ({}))) as SyncCallsResponse;
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.message ?? 'Sync failed');
+  }
+
+  return result;
 }

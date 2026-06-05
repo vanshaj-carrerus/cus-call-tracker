@@ -2,13 +2,13 @@
   "expo": {
     "name": "Call Tracker",
     "slug": "cus-call-tracker",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "cuscalltracker",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +22,9 @@
         "android.permission.READ_PHONE_STATE",
         "android.permission.READ_PHONE_NUMBERS"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "co.custech.calltracker",
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -40,11 +42,19 @@
           }
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-background-task"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b9ce94ed-3f55-498f-8144-012341b1ce3d"
+      }
+    },
+    "owner": "vanshajsharma1013s-organization"
   }
 }

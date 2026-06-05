@@ -6,18 +6,22 @@ import { AuthFooterLink } from '@/components/auth-footer-link';
 import { AuthErrorMessage, AuthForm, AuthSubmitButton, AuthTextInput } from '@/components/auth-form';
 import { AuthScreen } from '@/components/auth-screen';
 import { useAuth } from '@/context/auth-context';
+import { submitAuth } from '@/lib/auth-api';
 import { validateSignupFields } from '@/lib/validation';
 import type { ApiError } from '@/types/auth';
 
 export default function SignupScreen() {
-  const { signup, isSubmitting } = useAuth();
+  const { establishSession } = useAuth();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fieldError, setFieldError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit() {
+    if (isSubmitting) return;
+
     const validationError = validateSignupFields(name, email, password);
     if (validationError) {
       setFieldError(validationError);
@@ -25,13 +29,18 @@ export default function SignupScreen() {
     }
 
     setFieldError(null);
+    setIsSubmitting(true);
 
     try {
-      await signup({ name, email, password });
-      router.replace('/index');
+      const { token, user } = await submitAuth('signup', { name, email, password });
+      await establishSession(token, user);
+      router.replace('/(tabs)');
     } catch (error) {
       const message = (error as ApiError).message ?? 'Signup failed. Please try again.';
+      setFieldError(message);
       Alert.alert('Signup failed', message);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -55,6 +64,7 @@ export default function SignupScreen() {
           autoComplete="name"
           value={name}
           onChangeText={setName}
+          editable={!isSubmitting}
         />
         <AuthTextInput
           index={1}
@@ -65,6 +75,7 @@ export default function SignupScreen() {
           autoComplete="email"
           value={email}
           onChangeText={setEmail}
+          editable={!isSubmitting}
         />
         <AuthTextInput
           index={2}
@@ -74,6 +85,9 @@ export default function SignupScreen() {
           autoComplete="new-password"
           value={password}
           onChangeText={setPassword}
+          editable={!isSubmitting}
+          returnKeyType="go"
+          onSubmitEditing={handleSubmit}
         />
 
         {fieldError ? <AuthErrorMessage message={fieldError} /> : null}

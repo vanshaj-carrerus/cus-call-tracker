@@ -2,6 +2,8 @@ import { Platform, PermissionsAndroid } from 'react-native';
 
 import { mapNativeCallType } from '@/lib/call-utils';
 import type { CallRecord } from '@/types/call';
+import CusCallHandler from '../../modules/cus-call-handler/src/CusCallHandlerModule';
+import type { NativeCallLogEntry } from '../../modules/cus-call-handler/src/CusCallHandler.types';
 
 const DEMO_CALLS: CallRecord[] = [
   {
@@ -63,15 +65,7 @@ async function requestAndroidPermissions(): Promise<boolean> {
   );
 }
 
-function mapNativeRecord(entry: {
-  phoneNumber: string;
-  name?: string;
-  type: number;
-  duration: number;
-  dateTime: number;
-  phoneAccountId?: string;
-  rawType?: string;
-}): CallRecord {
+function mapNativeRecord(entry: NativeCallLogEntry): CallRecord {
   return {
     id: `${entry.dateTime}-${entry.phoneNumber}`,
     phoneNumber: entry.phoneNumber,
@@ -79,14 +73,30 @@ function mapNativeRecord(entry: {
     type: mapNativeCallType(entry.type),
     durationSeconds: Math.max(0, Math.floor(entry.duration)),
     timestamp: entry.dateTime,
-    simLabel: entry.phoneAccountId || entry.rawType || undefined,
+    simLabel: entry.phoneAccountId || undefined,
   };
 }
 
 async function loadAndroidCallLog(limit = 200): Promise<CallRecord[]> {
-  const CallLogs = require('react-native-call-log').default;
-  const raw = await CallLogs.load(limit);
+  const raw = await CusCallHandler.load(limit);
   return raw.map(mapNativeRecord);
+}
+
+/**
+ * Load real device call logs for server sync (no demo fallback).
+ * Returns an empty array when permissions are missing or the platform is unsupported.
+ */
+export async function fetchCallLogsForSync(limit = 200): Promise<CallRecord[]> {
+  if (Platform.OS !== 'android') return [];
+
+  try {
+    const granted = await requestAndroidPermissions();
+    if (!granted) return [];
+
+    return await loadAndroidCallLog(limit);
+  } catch {
+    return [];
+  }
 }
 
 export async function loadCallHistory(limit = 200): Promise<LoadCallLogResult> {
@@ -108,7 +118,7 @@ export async function loadCallHistory(limit = 200): Promise<LoadCallLogResult> {
         calls: DEMO_CALLS,
         source: 'demo',
         message:
-          'Native call log module unavailable. Build a development APK with `npx expo run:android`.',
+          'Call log native module unavailable. Rebuild the app with EAS or `npx expo run:android`.',
       };
     }
   }

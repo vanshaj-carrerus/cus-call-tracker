@@ -1,8 +1,18 @@
-export type User = Record<string, unknown>;
+export type User = {
+  id: string;
+  email: string;
+  name?: string;
+};
 
 export type AuthResponse = {
   success: boolean;
-  token: string;
+  token?: string;
+  user?: User;
+  message?: string;
+};
+
+export type MeResponse = {
+  success: boolean;
   user: User;
 };
 

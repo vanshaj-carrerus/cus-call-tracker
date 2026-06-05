@@ -1,9 +1,12 @@
+import '@/tasks/call-sync-background';
+
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { CallSyncBootstrap } from '@/components/call-sync-bootstrap';
 import { AuthProvider, useAuth } from '@/context/auth-context';
 
 /**
@@ -22,7 +25,7 @@ function AuthGate() {
     if (!token && !inAuthGroup) {
       router.replace('/login');
     } else if (token && inAuthGroup) {
-      router.replace('/index');
+      router.replace('/(tabs)');
     }
   }, [token, isLoading, segments, router]);
 
@@ -47,6 +50,7 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider>
+        <CallSyncBootstrap />
         <AnimatedSplashOverlay />
         <AuthGate />
       </AuthProvider>

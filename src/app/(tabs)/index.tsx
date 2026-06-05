@@ -1,19 +1,47 @@
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CallListItem } from '@/components/call-list-item';
+import { DayPicker } from '@/components/day-picker';
 import { StatCard } from '@/components/stat-card';
 import { StatusBanner } from '@/components/status-banner';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useCallLog } from '@/hooks/use-call-log';
-import { formatDuration } from '@/lib/call-utils';
+import {
+  computeCallStats,
+  filterCallsByDay,
+  formatDuration,
+  getDaySectionTitle,
+  startOfDayMs,
+} from '@/lib/call-utils';
+
+function todayAtMidnight(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 export default function DashboardScreen() {
-  const { calls, stats, source, message, loading, refreshing, error, refresh } = useCallLog(50);
+  const { calls, source, message, loading, refreshing, error, refresh } = useCallLog(50);
+  const [selectedDay, setSelectedDay] = useState(todayAtMidnight);
 
-  const recentCalls = calls.slice(0, 8);
+  const dayCalls = useMemo(
+    () => filterCallsByDay(calls, selectedDay).sort((a, b) => b.timestamp - a.timestamp),
+    [calls, selectedDay],
+  );
+  const stats = useMemo(() => computeCallStats(dayCalls), [dayCalls]);
+  const sectionTitle = useMemo(() => getDaySectionTitle(selectedDay), [selectedDay]);
+
+  const handleSelectDay = (day: Date) => {
+    const normalized = new Date(day);
+    normalized.setHours(0, 0, 0, 0);
+    if (startOfDayMs(normalized) !== startOfDayMs(selectedDay)) {
+      setSelectedDay(normalized);
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -24,9 +52,11 @@ export default function DashboardScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">Call Tracker</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              Company phone call history & duration
+              Daily call stats and history for the selected day
             </ThemedText>
           </ThemedView>
+
+          <DayPicker selectedDay={selectedDay} onSelectDay={handleSelectDay} />
 
           {message ? <StatusBanner message={message} variant={source === 'demo' ? 'warning' : 'info'} /> : null}
           {error ? <StatusBanner message={error} variant="warning" /> : null}
@@ -51,14 +81,14 @@ export default function DashboardScreen() {
               </ThemedView>
 
               <ThemedView style={styles.section}>
-                <ThemedText type="smallBold">Recent calls</ThemedText>
+                <ThemedText type="smallBold">{sectionTitle}</ThemedText>
                 <ThemedView style={styles.list}>
-                  {recentCalls.length === 0 ? (
+                  {dayCalls.length === 0 ? (
                     <ThemedText type="small" themeColor="textSecondary">
-                      No calls found on this device.
+                      No calls on this day.
                     </ThemedText>
                   ) : (
-                    recentCalls.map((call) => <CallListItem key={call.id} call={call} />)
+                    dayCalls.map((call) => <CallListItem key={call.id} call={call} />)
                   )}
                 </ThemedView>
               </ThemedView>

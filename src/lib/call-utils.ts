@@ -71,6 +71,71 @@ export function getCallTypeLabel(type: CallType): string {
   }
 }
 
+export function startOfDayMs(date: Date): number {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+export function isSameCalendarDay(a: Date, b: Date): boolean {
+  return startOfDayMs(a) === startOfDayMs(b);
+}
+
+export function isCallOnDay(call: CallRecord, day: Date): boolean {
+  const dayStart = startOfDayMs(day);
+  const dayEnd = new Date(day);
+  dayEnd.setHours(23, 59, 59, 999);
+  return call.timestamp >= dayStart && call.timestamp <= dayEnd.getTime();
+}
+
+export function filterCallsByDay(calls: CallRecord[], day: Date): CallRecord[] {
+  return calls.filter((call) => isCallOnDay(call, day));
+}
+
+export function formatDashboardDate(date: Date): string {
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+export type DashboardDayOption =
+  | { type: 'day'; id: string; label: string; date: Date }
+  | { type: 'more'; id: 'more'; label: 'More' };
+
+export function getDashboardDayOptions(now = new Date()): DashboardDayOption[] {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const dayBeforeYesterday = new Date(today);
+  dayBeforeYesterday.setDate(today.getDate() - 2);
+
+  return [
+    { type: 'day', id: 'today', label: 'Today', date: today },
+    { type: 'day', id: 'yesterday', label: 'Yesterday', date: yesterday },
+    {
+      type: 'day',
+      id: 'day-before',
+      label: formatDashboardDate(dayBeforeYesterday),
+      date: dayBeforeYesterday,
+    },
+    { type: 'more', id: 'more', label: 'More' },
+  ];
+}
+
+export function getDaySectionTitle(day: Date, now = new Date()): string {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  if (isSameCalendarDay(day, today)) return "Today's calls";
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (isSameCalendarDay(day, yesterday)) return "Yesterday's calls";
+  return `Calls on ${formatDashboardDate(day)}`;
+}
+
 export function computeCallStats(calls: CallRecord[]): CallStats {
   return calls.reduce<CallStats>(
     (stats, call) => {

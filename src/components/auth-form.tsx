@@ -80,7 +80,7 @@ export function AuthForm({ children }: AuthFormProps) {
 type AuthSubmitButtonProps = {
   label: string;
   loading: boolean;
-  onPress: () => void;
+  onPress: () => void | Promise<void>;
 };
 
 /** Primary CTA with press scale animation. */
